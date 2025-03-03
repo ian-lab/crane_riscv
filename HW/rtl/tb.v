@@ -29,7 +29,7 @@ module tb();
 
   initial begin
     $fsdbDumpfile("dump.fsdb") ; 
-    $fsdbDumpvars(0, tb);
+    $fsdbDumpvars(0, tb, "+mda");
   end
 
   initial begin
