@@ -50,3 +50,17 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+cm.log  
+csrc  
+*.fsdb  
+novas.conf  
+novas.rc  
+novas_dump.log  
+simv  
+simv.daidir  
+simv.vdb  
+*.vcd  
+ucli.key  
+verdiLog  
+verilog.dump

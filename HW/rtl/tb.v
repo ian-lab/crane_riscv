@@ -22,9 +22,14 @@ module tb();
     end
   end
 
+  //initial begin
+  //  $dumpfile("tb.vcd");
+  //  $dumpvars(0, tb);
+  //end
+
   initial begin
-    $dumpfile("tb.vcd");
-    $dumpvars(0, tb);
+    $fsdbDumpfile("dump.fsdb") ; 
+    $fsdbDumpvars(0, tb);
   end
 
   initial begin
