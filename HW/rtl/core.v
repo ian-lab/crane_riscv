@@ -9,7 +9,7 @@ module core (
   wire instr_valid_i;
   wire instr_valid_o;
  
-  wire [11:0] imm_o;
+  wire [11:0] imme_o;
   wire [ 4:0] rd_addr_o;
   wire [ 4:0] rs1_addr_o;
   wire [ 4:0] rs2_addr_o;
