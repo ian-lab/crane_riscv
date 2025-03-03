@@ -17,7 +17,6 @@ module core (
   wire [ 6:0] funct7_o;
   wire [ 6:0] opcode_o;
 
-  wire reg_write_o;
   wire [31:0] reg1_rdata_i;
   wire [31:0] reg2_rdata_i;
   wire [31:0] reg1_rdata_o;
@@ -88,7 +87,7 @@ module core (
     .reg1_rdata_i(reg1_rdata_o),
     .reg2_rdata_i(reg2_rdata_o),
 
-    .reg_wen_o(reg_write_o),
+    .reg_wen_o(reg_wen_o),
     .reg_waddr_o(reg_waddr_o),
     .reg_wdata_o(reg_wdata_o),
 
