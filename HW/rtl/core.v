@@ -4,8 +4,9 @@ module core (
 );
 
   wire [31:0] pc_next_o;
+  wire jump_valid;
   wire [31:0] pc_o;
-  wire [31:0] instr_i;
+  wire [31:0] instr_rom;
   wire instr_valid_i;
   wire instr_valid_o;
  
@@ -28,23 +29,24 @@ module core (
 
   // memory rw interface
   wire [31:0] mem_rdata_i; // memory read data
-  wire [31:0] mem_raddr_o; // memory read address
-  wire [31:0] mem_waddr_o; // memory write address
+  wire [31:0] mem_addr_o; // memory read address
   wire [31:0] mem_wdata_o; // memory write data
   wire [ 1:0] mem_wsize_o; // memory write size
+  wire [ 3:0] mem_wmask_o; // memory write mask
   wire mem_wen_o;           // memory write enable
 
   rom u_rom (
     .addr(pc_o),
-    .instr(instr_i)
+    .instr(instr_rom)
   );
 
   ifu u_ifu (
     .clk(clk),
     .rst_n(rst_n),
     .instr_valid_i('b1),
-    .instr_i(instr_i),
-    .pc_i(pc_next_o),
+    .instr_i(instr_rom),
+    .pc_next_i(pc_next_o),
+    .jump_valid_i(jump_valid),
     .pc_o(pc_o),
     .instr_valid_o(instr_valid_o)
   );
@@ -52,7 +54,7 @@ module core (
   idu u_idu (
     .clk(clk),
     .rst_n(rst_n),
-    .instr_i(instr_i),
+    .instr_i(instr_rom),
 
     .reg1_rdata_i(reg1_rdata_i),
     .reg2_rdata_i(reg2_rdata_i),
@@ -75,6 +77,7 @@ module core (
 
     .pc_i(pc_o),
     .pc_next_o(pc_next_o),
+    .jump_valid_o(jump_valid),
 
     .imme_i(imme_o),
     .rd_i(rd_addr_o),
@@ -92,10 +95,10 @@ module core (
     .reg_wdata_o(reg_wdata_o),
 
     .mem_rdata_i(mem_rdata_i),
-    .mem_raddr_o(mem_raddr_o),
-    .mem_waddr_o(mem_addr_o),
+    .mem_addr_o(mem_addr_o),
     .mem_wdata_o(mem_wdata_o),
     .mem_wsize_o(mem_wsize_o),
+    .mem_wmask_o(mem_wmask_o),
     .mem_wen_o(mem_wen_o)
     
   );
@@ -113,6 +116,19 @@ module core (
 
     .rs1_data(reg1_rdata_i),
     .rs2_data(reg2_rdata_i)
+  );
+
+  wire byte_en = mem_wsize_o == 2'b00 ? 4'b0001:
+                 mem_wsize_o == 2'b01 ? 4'b0011:
+                 mem_wsize_o == 2'b10 ? 4'b1111: 4'b0000;
+
+  sram u_sram (
+    .clk(clk),
+    .we(mem_wen_o),
+    .byte_en(mem_wmask_o),
+    .addr(mem_addr_o),
+    .din(mem_wdata_o),
+    .dout(mem_rdata_i)
   );
 
 endmodule

@@ -16,7 +16,8 @@ module ifu (
     input         instr_valid_i, // from sram
     input  [31:0] instr_i, // from sram
 
-    input  [31:0] pc_i, // from exu
+    input  [31:0] pc_next_i, // from exu
+    input         jump_valid_i, // from exu
 
     output reg [31:0] pc_o, // pc, to sram
 
@@ -37,6 +38,9 @@ module ifu (
     if (~rst_n) begin
       pc_o <= 32'b0;
     end 
+    else if(jump_valid_i) begin
+      pc_o <= pc_next_i; // jump instruction
+    end
     else begin
       pc_o <= pc_o + 'd4; // 32bit bus
     end

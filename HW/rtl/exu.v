@@ -13,6 +13,7 @@ module exu (
     // instruction interface
     input [31:0] pc_i,
     output reg [31:0] pc_next_o,
+    output reg [ 1:0] jump_flag_o,
 
     input [11:0] imme_i,    // immediate data
     input [ 4:0] rd_i,      // destination register
@@ -32,12 +33,13 @@ module exu (
     output reg [31:0] reg_wdata_o, // register write data
     
     // memory rw interface
-    input  [31:0] mem_rdata_i, // memory read data
-    output reg [31:0] mem_raddr_o, // memory read address
-    output reg [31:0] mem_waddr_o, // memory write address
+    input      [31:0] mem_rdata_i, // memory read data
+    output reg [31:0] mem_addr_o,  // memory read address
     output reg [31:0] mem_wdata_o, // memory write data
     output reg [ 1:0] mem_wsize_o, // memory write size
+    output reg [ 3:0] mem_wmask,   // memory write mask
     output reg mem_wen_o           // memory write enable
+
 );
 
 // adder
@@ -56,6 +58,23 @@ reg [31:0] divider_2;
 wire [31:0] divider_o = divider_1 / divider_2;
 
 always @(*) begin
+  adder_1 = 0;
+  adder_2 = 0;
+  multiplier_1 = 0;
+  multiplier_2 = 0;
+  divider_1 = 0;
+  divider_2 = 0;
+  reg_raddr_o = 0;
+  reg_wen_o = 0;
+  reg_waddr_o = 0;
+  reg_wdata_o = 0;
+  mem_addr_o = 0;
+  mem_wdata_o = 0;
+  mem_wsize_o = 0;
+  mem_wmask = 0;
+  mem_wen_o = 0;
+  pc_next_o = 0;
+
   case (opcode_i)
     `TYPE_I:begin
       case (funct3_i)
@@ -183,43 +202,32 @@ always @(*) begin
     end
 
     `TYPE_L: begin // load memory to register
+      adder_1 = reg1_rdata_i;
+      adder_2 = imme_i;
+      mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
+      
+      reg_wen_o = 1'b1;
+      reg_waddr_o = rd_i;
       case (funct3_i)
         `LB: begin // byte x[rd] = mem[x[rs1] + imme]
-          mem_raddr_o = reg1_rdata_i + imme_i;
-
-          reg_wen_o = 1'b1;
-          reg_waddr_o = rd_i;
-          case(mem_raddr_o)
+          case(mem_addr_o)
             2'b00: reg_wdata_o = { {24{mem_rdata_i[7]}},  mem_rdata_i[7:0]   };
             2'b01: reg_wdata_o = { {24{mem_rdata_i[15]}}, mem_rdata_i[15:8]  };
             2'b10: reg_wdata_o = { {24{mem_rdata_i[23]}}, mem_rdata_i[23:16] };
             2'b11: reg_wdata_o = { {24{mem_rdata_i[31]}}, mem_rdata_i[31:24] };
           endcase
         end
-        `LH: begin // half word x[rd] = mem[x[rs1] + imme] 
-          mem_raddr_o = reg1_rdata_i + imme_i;
-
-          reg_wen_o = 1'b1;
-          reg_waddr_o = rd_i;
-          case(mem_raddr_o[1]) // 00 01 10 11
+        `LH: begin // half word x[rd] = mem[x[rs1] + imme]           
+          case(mem_addr_o[1]) // 00 01 10 11
             1'b0: reg_wdata_o = { {16{mem_rdata_i[15]}},  mem_rdata_i[15:0]};
             1'b1: reg_wdata_o = { {16{mem_rdata_i[31]}},  mem_rdata_i[31:16]};
           endcase
         end 
         `LW: begin // word
-          mem_raddr_o = reg1_rdata_i + imme_i;
-
-          reg_wen_o = 1'b1;
-          reg_waddr_o = rd_i;
           reg_wdata_o = mem_rdata_i;
         end
         `LBU: begin // unsigned byte
-          mem_raddr_o = rs1_i + imme_i;
-
-          reg_wen_o = 1'b1;
-          reg_waddr_o = rd_i;
-
-          case(mem_raddr_o)
+          case(mem_addr_o)
             2'b00: reg_wdata_o = { 24'h0, mem_rdata_i[7:0]   };
             2'b01: reg_wdata_o = { 24'h0, mem_rdata_i[15:8]  };
             2'b10: reg_wdata_o = { 24'h0, mem_rdata_i[23:16] };
@@ -227,8 +235,6 @@ always @(*) begin
           endcase
         end
         `LHU: begin // unsigned half word
-          mem_raddr_o = reg1_rdata_i + imme_i;
-
           reg_wen_o = 1'b1;
           reg_waddr_o = rd_i;
           case(reg_waddr_o[1]) // 00 01 10 11
@@ -242,31 +248,35 @@ always @(*) begin
     end
 
     `TYPE_S: begin // store register to memory
+      adder_1 = reg1_rdata_i;
+      adder_2 = imme_i;
+      mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
+      mem_wen_o = 1'b1;
       case (funct3_i)
-        `SB: begin // mem[x[rs1] + imme] = x[rs2]
-          mem_waddr_o = reg1_rdata_i + imme_i;
-          mem_wen_o = 1'b1;
+        `SB: begin // mem[x[rs1] + imme] = x[rs2]   
           mem_wsize_o = 2'b00; // byte
-          mem_wdata_o = {24'h0, reg2_rdata_i[7:0]};
-
-          // case(mem_waddr_o[1:0]) // 00 01 10 11
-          //   2'b00: mem_wdata_o = {24'h0, reg2_rdata_i[7:0]};
-          //   2'b01: mem_wdata_o = {reg2_rdata_i[31:16], reg2_rdata_i[7:0], reg2_rdata_i[7:0]};
-          //   2'b10: mem_wdata_o = {reg2_rdata_i[31:24], reg2_rdata_i[7:0], reg2_rdata_i[15:0]};
-          //   2'b11: mem_wdata_o = {reg2_rdata_i[7:0],   reg2_rdata_i[23:0]};
-          // endcase
+          case(mem_addr_o[1:0]) // 00 01 10 11
+            2'b00: mem_wdata_o = {24'h0, reg2_rdata_i[7:0]};
+            2'b01: mem_wdata_o = {reg2_rdata_i[31:16], reg2_rdata_i[7:0], reg2_rdata_i[7:0]};
+            2'b10: mem_wdata_o = {reg2_rdata_i[31:24], reg2_rdata_i[7:0], reg2_rdata_i[15:0]};
+            2'b11: mem_wdata_o = {reg2_rdata_i[7:0],   reg2_rdata_i[23:0]};
+          endcase
+          case(mem_addr_o[1:0]) // 00 01 10 11
+            2'b00: mem_wmask = 4'b0001;
+            2'b01: mem_wmask = 4'b0010;
+            2'b10: mem_wmask = 4'b0100;
+            2'b11: mem_wmask = 4'b1000;
+          endcase
         end
         `SH: begin
-          mem_waddr_o = reg1_rdata_i + imme_i;
-          mem_wen_o = 1'b1;
           mem_wsize_o = 2'b01; // half word
-          mem_wdata_o = {16'h0, reg2_rdata_i[15:0]};
+          mem_wdata_o = mem_addr_o[1] ? {reg2_rdata_i[31:16], 16'h0} : {16'h0, reg2_rdata_i[15:0]};
+          mem_wmask = mem_addr_o[1] ? 4'b0011 : 4'b1100;
         end
         `SW: begin
-          mem_waddr_o = reg1_rdata_i + imme_i;
-          mem_wen_o = 1'b1;
-          mem_wsize_o = 2'b10; // half word
-          mem_wdata_o = reg2_rdata_i[15:0];
+          mem_wsize_o = 2'b10; // word
+          mem_wdata_o = reg2_rdata_i;
+          mem_wmask = 4'b1111;
         end
         default: begin
         end
@@ -277,21 +287,27 @@ always @(*) begin
       case (funct3_i)
         `BEQ: begin // pc = x[rs1] == x[rs2] ? pc + imme : pc
           pc_next_o = (reg1_rdata_i == reg2_rdata_i) ? pc_i + imme_i : pc_i;
+          jump_flag_o = (reg1_rdata_i == reg2_rdata_i) ? 1 : 0;
         end
         `BNE: begin // pc = x[rs1] != x[rs2] ? pc + imme : pc
           pc_next_o = (reg1_rdata_i != reg2_rdata_i) ? pc_i + imme_i : pc_i;
+          pc_next_o = (reg1_rdata_i != reg2_rdata_i) ? 1 : 0;
         end
         `BLT: begin // pc = x[rs1] < x[rs2] ? pc + imme : pc
           pc_next_o = ($signed(reg1_rdata_i) < $signed(reg2_rdata_i)) ? pc_i + imme_i : pc_i;
+          jump_flag_o = ($signed(reg1_rdata_i) < $signed(reg2_rdata_i)) ? 1 : 0;
         end
         `BLTU: begin // pc = x[rs1] < x[rs2] ? pc + imme : pc
           pc_next_o = ($signed(reg1_rdata_i) < $signed(reg2_rdata_i)) ? pc_i + imme_i : pc_i;
+          jump_flag_o = ($signed(reg1_rdata_i) < $signed(reg2_rdata_i)) ? 1 : 0;
         end
         `BGE: begin // pc = x[rs1] >= x[rs2] ? pc + imme : pc
           pc_next_o = (reg1_rdata_i >= reg2_rdata_i) ? pc_i + imme_i : pc_i;
+          jump_flag_o = (reg1_rdata_i >= reg2_rdata_i) ? 1 : 0;
         end
         `BGEU: begin // pc = x[rs1] >= x[rs2] ? pc + imme : pc
           pc_next_o = (reg1_rdata_i >= reg2_rdata_i) ? pc_i + imme_i : pc_i;
+          jump_flag_o = (reg1_rdata_i >= reg2_rdata_i) ? 1 : 0;
         end
         default: begin
         end
@@ -303,6 +319,7 @@ always @(*) begin
       reg_waddr_o = rd_i;
       reg_wdata_o = pc_i + 4;
       pc_next_o = pc_i + imme_i;
+      jump_flag_o = 1;
     end
 
     `TYPE_JALR: begin // jump and link register, x[rd] = pc + 4, pc = x[rs1] + imme
@@ -312,6 +329,7 @@ always @(*) begin
       reg_waddr_o = rd_i;
       reg_wdata_o = pc_i + 4;
       pc_next_o = (reg1_rdata_i + imme_i) & 32'hfffffffe;
+      jump_flag_o = 1;
     end
 
     `TYPE_LUI: begin // load upper immediate, x[rd] = imme << 12
