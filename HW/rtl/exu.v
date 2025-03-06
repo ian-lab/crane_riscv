@@ -13,7 +13,9 @@ module exu (
     // instruction interface
     input [31:0] pc_i,
     output reg [31:0] pc_next_o,
-    output reg [ 1:0] jump_flag_o,
+    output reg jump_flag_o,
+    output reg jump_hold_o,
+    output reg ls_hold_o,
 
     input [11:0] imme_i,    // immediate data
     input [ 4:0] rd_i,      // destination register
@@ -26,7 +28,6 @@ module exu (
     // register rw interface
     input [31:0] reg1_rdata_i, // register read data
     input [31:0] reg2_rdata_i, // register read data
-    output reg [31:0] reg_raddr_o, // register read address 
 
     output reg reg_wen_o,          // register write enable
     output reg [31:0] reg_waddr_o, // register write address
@@ -38,8 +39,8 @@ module exu (
     output reg [31:0] mem_wdata_o, // memory write data
     output reg [ 1:0] mem_wsize_o, // memory write size
     output reg [ 3:0] mem_wmask,   // memory write mask
-    output reg mem_wen_o           // memory write enable
-
+    output reg mem_wen_o,           // memory write enable
+    input mem_ack_i // memory ack
 );
 
 // adder
@@ -57,6 +58,30 @@ reg [31:0] divider_1;
 reg [31:0] divider_2;
 wire [31:0] divider_o = divider_1 / divider_2;
 
+// jump hold flag
+reg jump_flag_o_d;
+always @(posedge clk ) begin
+  jump_flag_o_d <= jump_flag_o;
+end
+always @(*) begin
+  jump_hold_o = jump_flag_o_d | jump_flag_o;
+end
+
+
+// load/store hold flag
+reg ls_flag;
+always @(*) begin
+  if(ls_flag) begin
+    ls_hold_o = 1;
+  end
+  else if(mem_ack_i) begin
+    ls_hold_o = 0;
+  end
+  else begin
+    ls_hold_o = ls_hold_o;
+  end 
+end
+
 always @(*) begin
   adder_1 = 0;
   adder_2 = 0;
@@ -64,7 +89,6 @@ always @(*) begin
   multiplier_2 = 0;
   divider_1 = 0;
   divider_2 = 0;
-  reg_raddr_o = 0;
   reg_wen_o = 0;
   reg_waddr_o = 0;
   reg_wdata_o = 0;
@@ -202,6 +226,8 @@ always @(*) begin
     end
 
     `TYPE_L: begin // load memory to register
+      ls_flag = 1'b1;
+
       adder_1 = reg1_rdata_i;
       adder_2 = imme_i;
       mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
@@ -248,6 +274,7 @@ always @(*) begin
     end
 
     `TYPE_S: begin // store register to memory
+      ls_flag = 1'b1;
       adder_1 = reg1_rdata_i;
       adder_2 = imme_i;
       mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
@@ -323,8 +350,6 @@ always @(*) begin
     end
 
     `TYPE_JALR: begin // jump and link register, x[rd] = pc + 4, pc = x[rs1] + imme
-      reg_raddr_o = rs1_i;
-
       reg_wen_o = 1'b1;
       reg_waddr_o = rd_i;
       reg_wdata_o = pc_i + 4;

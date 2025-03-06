@@ -5,6 +5,8 @@ module core (
 
   wire [31:0] pc_next_o;
   wire jump_valid;
+  wire jump_hold_o;
+  wire ls_hold_o;
   wire [31:0] pc_o;
   wire [31:0] instr_rom;
   wire instr_valid_i;
@@ -47,6 +49,7 @@ module core (
     .instr_i(instr_rom),
     .pc_next_i(pc_next_o),
     .jump_valid_i(jump_valid),
+    .hold_valid_i(ls_hold_o),
     .pc_o(pc_o),
     .instr_valid_o(instr_valid_o)
   );
@@ -55,6 +58,9 @@ module core (
     .clk(clk),
     .rst_n(rst_n),
     .instr_i(instr_rom),
+
+    .jump_hold_i(jump_hold_o),
+    .ls_hold_i(ls_hold_o),
 
     .reg1_rdata_i(reg1_rdata_i),
     .reg2_rdata_i(reg2_rdata_i),
@@ -77,7 +83,9 @@ module core (
 
     .pc_i(pc_o),
     .pc_next_o(pc_next_o),
-    .jump_valid_o(jump_valid),
+    .jump_flag_o(jump_valid),
+    .jump_hold_o(jump_hold_o),
+    .ls_hold_i(ls_hold_o),
 
     .imme_i(imme_o),
     .rd_i(rd_addr_o),
