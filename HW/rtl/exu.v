@@ -72,7 +72,6 @@ always @(*) begin
   jump_hold_o = jump_flag_o_d | jump_flag_o;
 end
 
-
 // load/store hold flag
 reg ls_flag;
 always @(*) begin
@@ -89,6 +88,8 @@ always @(*) begin
     ls_hold_o = ls_hold_o;
   end 
 end
+
+reg instr_error;
 
 always @(*) begin
   adder_1 = 0;
@@ -109,8 +110,10 @@ always @(*) begin
   jump_flag_o = 0;
   ls_flag = 0;
   mem_sel_o = 0;
+  instr_error = 0;
 
   case (opcode_i)
+    // I-type instructions
     `TYPE_I:begin
       case (funct3_i)
         `ADD: begin // imme + x[rs1]
@@ -161,9 +164,13 @@ always @(*) begin
           reg_waddr_o = rd_i;
           reg_wdata_o = $signed(reg1_rdata_i) >>> imme_i;
         end
+        default: begin
+          instr_error = 1;
+        end
       endcase
     end
 
+    // R-type instructions
     `TYPE_R : begin
       case (funct7_i)
         7'b000_0000: begin // funct7[5] == 0
@@ -212,6 +219,7 @@ always @(*) begin
               reg_wdata_o = reg1_rdata_i & reg2_rdata_i;
             end
             default: begin
+              instr_error = 1;
             end
           endcase
         end
@@ -228,14 +236,17 @@ always @(*) begin
               reg_wdata_o = reg1_rdata_i >>> reg2_rdata_i;
             end
             default: begin
+              instr_error = 1;
             end
           endcase
         end
         default: begin
+          instr_error = 1;
         end 
       endcase
     end
 
+    //  L-type instructions
     `TYPE_L: begin // load memory to register
       ls_flag = 1'b1;
       mem_sel_o = 1'b1;
@@ -281,10 +292,12 @@ always @(*) begin
           endcase
         end
         default: begin
+          instr_error = 1;
         end
       endcase
     end
 
+    // S-type instructions
     `TYPE_S: begin // store register to memory
       ls_flag = 1'b1;
       mem_sel_o = 1'b1;
@@ -320,10 +333,12 @@ always @(*) begin
           mem_wmask_o = 4'b1111;
         end
         default: begin
+          instr_error = 1;
         end
       endcase
     end
 
+    // B-type instructions
     `TYPE_B: begin // branch
       case (funct3_i)
         `BEQ: begin // pc = x[rs1] == x[rs2] ? pc + imme : pc
@@ -351,10 +366,12 @@ always @(*) begin
           jump_flag_o = (reg1_rdata_i >= reg2_rdata_i) ? 1 : 0;
         end
         default: begin
+          instr_error = 1;
         end
       endcase
     end
 
+    // J-type instructions
     `TYPE_JAL: begin // jump and link, x[rd] = pc + 4, pc = pc + imme
       reg_wen_o = 1'b1;
       reg_waddr_o = rd_i;
@@ -363,6 +380,7 @@ always @(*) begin
       jump_flag_o = 1;
     end
 
+    // JALR-type instructions
     `TYPE_JALR: begin // jump and link register, x[rd] = pc + 4, pc = x[rs1] + imme
       reg_wen_o = 1'b1;
       reg_waddr_o = rd_i;
@@ -371,16 +389,22 @@ always @(*) begin
       jump_flag_o = 1;
     end
 
+    // U-type instructions
     `TYPE_LUI: begin // load upper immediate, x[rd] = imme << 12
       reg_wen_o = 1'b1;
       reg_waddr_o = rd_i;
       reg_wdata_o = {imme_i, 12'h0};
     end
 
+    // U-type instructions
     `TYPE_AUIPC: begin // add upper immediate to pc, x[rd] = pc + (imme << 12)
       reg_wen_o = 1'b1;
       reg_waddr_o = rd_i;
       reg_wdata_o = pc_i + {imme_i, 12'h0};
+    end
+
+    default: begin
+      instr_error = 1;  
     end
   endcase
 end
