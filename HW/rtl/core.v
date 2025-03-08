@@ -30,12 +30,15 @@ module core (
   wire reg_wen_o;
 
   // memory rw interface
-  wire [31:0] mem_rdata_i; // memory read data
-  wire [31:0] mem_addr_o; // memory read address
-  wire [31:0] mem_wdata_o; // memory write data
-  wire [ 1:0] mem_wsize_o; // memory write size
-  wire [ 3:0] mem_wmask_o; // memory write mask
+  
+  wire [31:0] mem_addr_o;   // memory read address
+  wire [31:0] mem_rdata_i;  // memory read data
+  wire [31:0] mem_wdata_o;  // memory write data
+  wire [ 1:0] mem_wsize_o;  // memory write size
+  wire [ 3:0] mem_wmask_o;  // memory write mask
+  wire mem_sel_o;           // memory select
   wire mem_wen_o;           // memory write enable
+  wire mem_ack_i;           // memory ack
 
   rom u_rom (
     .addr(pc_o),
@@ -107,8 +110,9 @@ module core (
     .mem_wdata_o(mem_wdata_o),
     .mem_wsize_o(mem_wsize_o),
     .mem_wmask_o(mem_wmask_o),
+    .mem_sel_o(mem_sel_o),
     .mem_wen_o(mem_wen_o),
-    .mem_ack_i(1'b1)
+    .mem_ack_i(mem_ack_i)
     
   );
 
@@ -133,11 +137,13 @@ module core (
 
   sram u_sram (
     .clk(clk),
+    .sel(mem_sel_o),
     .we(mem_wen_o),
     .byte_en(mem_wmask_o),
     .addr(mem_addr_o),
     .din(mem_wdata_o),
-    .dout(mem_rdata_i)
+    .dout(mem_rdata_i),
+    .ack(mem_ack_i)
   );
 
 endmodule

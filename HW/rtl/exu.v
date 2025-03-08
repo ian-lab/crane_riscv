@@ -1,4 +1,3 @@
-
 //============================================================
 // 
 //
@@ -34,11 +33,13 @@ module exu (
     output reg [31:0] reg_wdata_o, // register write data
     
     // memory rw interface
+
     input      [31:0] mem_rdata_i, // memory read data
     output reg [31:0] mem_addr_o,  // memory read address
     output reg [31:0] mem_wdata_o, // memory write data
     output reg [ 1:0] mem_wsize_o, // memory write size
     output reg [ 3:0] mem_wmask_o,   // memory write mask
+    output reg mem_sel_o,           // memory select
     output reg mem_wen_o,           // memory write enable
     input mem_ack_i // memory ack
 );
@@ -107,6 +108,7 @@ always @(*) begin
   pc_next_o = 0;
   jump_flag_o = 0;
   ls_flag = 0;
+  mem_sel_o = 0;
 
   case (opcode_i)
     `TYPE_I:begin
@@ -236,6 +238,7 @@ always @(*) begin
 
     `TYPE_L: begin // load memory to register
       ls_flag = 1'b1;
+      mem_sel_o = 1'b1;
 
       adder_1 = reg1_rdata_i;
       adder_2 = imme_i;
@@ -284,6 +287,8 @@ always @(*) begin
 
     `TYPE_S: begin // store register to memory
       ls_flag = 1'b1;
+      mem_sel_o = 1'b1;
+
       adder_1 = reg1_rdata_i;
       adder_2 = imme_i;
       mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
