@@ -57,9 +57,6 @@ module ifu (
     else if (instr_valid_i) begin
       instr_valid_o <= instr_valid_i; // valid instruction
     end
-    else begin
-      instr_valid_o <= `NOP; // nop inrstuction
-    end
   end
 
 

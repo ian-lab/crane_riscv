@@ -137,6 +137,7 @@ module core (
 
   sram u_sram (
     .clk(clk),
+    .rst_n(rst_n),
     .sel(mem_sel_o),
     .we(mem_wen_o),
     .byte_en(mem_wmask_o),

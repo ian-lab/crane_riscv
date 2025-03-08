@@ -8,7 +8,7 @@
 `define DEFINE_V
 
 // INSTRUCTION
-`define NOP  32'h0000_006f // nop jal x0,0
+`define NOP  32'h00000013 // nop addi x0, x0, 0
 
 // OPCODE
 `define TYPE_R     7'b0110011
