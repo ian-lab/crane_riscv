@@ -1,1 +1,1 @@
-setenv PROJ_PATH /home/ian/crane_riscv/crane_riscv/
+setenv PROJ_PATH /home/autumn/project/crane_riscv/

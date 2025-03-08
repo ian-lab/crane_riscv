@@ -9,6 +9,7 @@ $PROJ_PATH/HW/rtl/idu.v
 $PROJ_PATH/HW/rtl/exu.v
 $PROJ_PATH/HW/rtl/regs.v
 $PROJ_PATH/HW/rtl/rom.v
+$PROJ_PATH/HW/rtl/sram.v
 
 $PROJ_PATH/HW/rtl/tb.v
 

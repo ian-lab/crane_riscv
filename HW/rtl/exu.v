@@ -38,7 +38,7 @@ module exu (
     output reg [31:0] mem_addr_o,  // memory read address
     output reg [31:0] mem_wdata_o, // memory write data
     output reg [ 1:0] mem_wsize_o, // memory write size
-    output reg [ 3:0] mem_wmask,   // memory write mask
+    output reg [ 3:0] mem_wmask_o,   // memory write mask
     output reg mem_wen_o,           // memory write enable
     input mem_ack_i // memory ack
 );
@@ -60,9 +60,13 @@ wire [31:0] divider_o = divider_1 / divider_2;
 
 // jump hold flag
 reg jump_flag_o_d;
-always @(posedge clk ) begin
+always @(posedge clk or negedge rst_n ) begin
+  if( !rst_n ) begin
+    jump_flag_o_d <= 0; 
+  end
   jump_flag_o_d <= jump_flag_o;
 end
+
 always @(*) begin
   jump_hold_o = jump_flag_o_d | jump_flag_o;
 end
@@ -71,7 +75,10 @@ end
 // load/store hold flag
 reg ls_flag;
 always @(*) begin
-  if(ls_flag) begin
+  if(!rst_n)begin
+    ls_hold_o = 0;
+  end
+  else if(ls_flag) begin
     ls_hold_o = 1;
   end
   else if(mem_ack_i) begin
@@ -95,9 +102,11 @@ always @(*) begin
   mem_addr_o = 0;
   mem_wdata_o = 0;
   mem_wsize_o = 0;
-  mem_wmask = 0;
+  mem_wmask_o = 0;
   mem_wen_o = 0;
   pc_next_o = 0;
+  jump_flag_o = 0;
+  ls_flag = 0;
 
   case (opcode_i)
     `TYPE_I:begin
@@ -289,21 +298,21 @@ always @(*) begin
             2'b11: mem_wdata_o = {reg2_rdata_i[7:0],   reg2_rdata_i[23:0]};
           endcase
           case(mem_addr_o[1:0]) // 00 01 10 11
-            2'b00: mem_wmask = 4'b0001;
-            2'b01: mem_wmask = 4'b0010;
-            2'b10: mem_wmask = 4'b0100;
-            2'b11: mem_wmask = 4'b1000;
+            2'b00: mem_wmask_o = 4'b0001;
+            2'b01: mem_wmask_o = 4'b0010;
+            2'b10: mem_wmask_o = 4'b0100;
+            2'b11: mem_wmask_o = 4'b1000;
           endcase
         end
         `SH: begin
           mem_wsize_o = 2'b01; // half word
           mem_wdata_o = mem_addr_o[1] ? {reg2_rdata_i[31:16], 16'h0} : {16'h0, reg2_rdata_i[15:0]};
-          mem_wmask = mem_addr_o[1] ? 4'b0011 : 4'b1100;
+          mem_wmask_o = mem_addr_o[1] ? 4'b0011 : 4'b1100;
         end
         `SW: begin
           mem_wsize_o = 2'b10; // word
           mem_wdata_o = reg2_rdata_i;
-          mem_wmask = 4'b1111;
+          mem_wmask_o = 4'b1111;
         end
         default: begin
         end

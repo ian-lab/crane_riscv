@@ -85,7 +85,7 @@ module core (
     .pc_next_o(pc_next_o),
     .jump_flag_o(jump_valid),
     .jump_hold_o(jump_hold_o),
-    .ls_hold_i(ls_hold_o),
+    .ls_hold_o(ls_hold_o),
 
     .imme_i(imme_o),
     .rd_i(rd_addr_o),
@@ -107,7 +107,8 @@ module core (
     .mem_wdata_o(mem_wdata_o),
     .mem_wsize_o(mem_wsize_o),
     .mem_wmask_o(mem_wmask_o),
-    .mem_wen_o(mem_wen_o)
+    .mem_wen_o(mem_wen_o),
+    .mem_ack_i(1'b1)
     
   );
 

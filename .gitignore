@@ -67,3 +67,11 @@ verilog.dump
 
 *.bin
 *.swp
+
+flex*
+*.fsdb
+csrc/
+simv*
+novas*
+verdi*
+ucli*
