@@ -72,21 +72,19 @@ always @(*) begin
   jump_hold_o = jump_flag_o_d | jump_flag_o;
 end
 
+reg mem_ack_d;
+always @(posedge clk) begin
+ mem_ack_d <= mem_ack_i;
+end
+
 // load/store hold flag
 reg ls_flag;
-always @(*) begin
-  if(!rst_n)begin
-    ls_hold_o = 0;
-  end
-  else if(ls_flag) begin
-    ls_hold_o = 1;
-  end
-  else if(mem_ack_i) begin
-    ls_hold_o = 0;
-  end
-  else begin
-    ls_hold_o = ls_hold_o;
-  end 
+always @(*)begin
+  ls_hold_o = ls_flag & (!mem_ack_d);
+end
+
+always @(posedge clk)begin
+  mem_sel_o = ls_hold_o;
 end
 
 reg instr_error;
@@ -109,7 +107,7 @@ always @(*) begin
   pc_next_o = 0;
   jump_flag_o = 0;
   ls_flag = 0;
-  mem_sel_o = 0;
+  // mem_sel_o = 0;
   instr_error = 0;
 
   case (opcode_i)
@@ -118,7 +116,7 @@ always @(*) begin
       case (funct3_i)
         `ADD: begin // imme + x[rs1]
           adder_1 = reg1_rdata_i;
-          adder_2 = imme_i;
+          adder_2 = { {20{imme_i[11]}}, imme_i}; // signed
 
           reg_wen_o = 1'b1;
           reg_waddr_o = rd_i;
@@ -249,10 +247,10 @@ always @(*) begin
     //  L-type instructions
     `TYPE_L: begin // load memory to register
       ls_flag = 1'b1;
-      mem_sel_o = 1'b1;
+      // mem_sel_o = 1'b1;
 
       adder_1 = reg1_rdata_i;
-      adder_2 = imme_i;
+      adder_2 = { {20{imme_i[11]}}, imme_i}; // signed
       mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
       
       reg_wen_o = 1'b1;
@@ -300,10 +298,10 @@ always @(*) begin
     // S-type instructions
     `TYPE_S: begin // store register to memory
       ls_flag = 1'b1;
-      mem_sel_o = 1'b1;
+      // mem_sel_o = 1'b1;
 
       adder_1 = reg1_rdata_i;
-      adder_2 = imme_i;
+      adder_2 = { {20{imme_i[11]}}, imme_i}; // signed
       mem_addr_o = adder_o; // mem_addr_o = x[rs1] + imme
       mem_wen_o = 1'b1;
       case (funct3_i)

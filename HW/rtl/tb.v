@@ -13,6 +13,9 @@ module tb();
   initial begin
     rst_n = 0;
     #10 rst_n = 1;
+    #10 rst_n = 0;
+    #10 rst_n = 1;
+
   end
 
   initial begin
@@ -33,7 +36,7 @@ module tb();
   end
 
   initial begin
-    #200; 
+    #500; 
     $finish;
   end
 

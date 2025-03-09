@@ -12,7 +12,9 @@ module idu (
     input  rst_n,
     
     input  [31:0] instr_i, // instruction, from ifu
-
+    input  [31:0] pc_i,
+    output reg [31:0] pc_o,
+    
     input  jump_hold_i, // from exu
     input  ls_hold_i, // from exu
 
@@ -32,8 +34,8 @@ module idu (
     output reg [31:0] reg2_rdata_o // register read data
 );
 
-  wire [31:0] instr_tmp = jump_hold_i | ls_hold_i ? `NOP : instr_i; // jump or hold will generate nop instruction
-
+  wire [31:0] instr_tmp = jump_hold_i ? `NOP : instr_i; // jump or hold will generate nop instruction
+  //wire [31:0] instr_tmp = instr_i;
   assign rs1_o = instr_tmp[19:15]; // source register 1
   assign rs2_o = instr_tmp[24:20]; // source register 2
 
@@ -57,8 +59,26 @@ module idu (
                          opcode == `TYPE_JALR ? imme_i : 
                          (opcode == `TYPE_LUI) | (opcode == `TYPE_AUIPC) ? imme_u : 32'b0; // immediate data
 
-
+  reg [31:0] instr_tmp_d; // for debug
   always @(posedge clk ) begin
+    if(ls_hold_i)begin
+          // instruction decode
+    imme_o <= imme_o;
+    rd_o <= rd_o;
+    funct3_o <= funct3_o;
+    funct7_o <= funct7_o;
+    opcode_o <= opcode_o;
+    
+    // register read data
+    reg1_rdata_o <= reg1_rdata_o;
+    reg2_rdata_o <= reg2_rdata_o;
+
+    pc_o <= pc_o;
+
+    instr_tmp_d <= instr_tmp_d;
+
+    end
+    else begin
     // instruction decode
     imme_o <= imme_tmp;
     rd_o <= rd;
@@ -69,6 +89,11 @@ module idu (
     // register read data
     reg1_rdata_o <= reg1_rdata_i;
     reg2_rdata_o <= reg2_rdata_i;
+
+    pc_o <= pc_i;
+
+    instr_tmp_d <= instr_tmp;
+    end
   end
 
 endmodule

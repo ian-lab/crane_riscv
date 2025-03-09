@@ -21,8 +21,9 @@ module ifu (
     input         hold_valid_i, // from exu
 
     output reg [31:0] pc_o, // pc, to sram
-
-    output reg [31:0] instr_valid_o // to exu
+    output reg [31:0] pc_d_o,
+    output reg [31:0] instr_o,
+    output reg instr_valid_o // to exu
 );
 /*
  *                     ____
@@ -58,6 +59,16 @@ module ifu (
       instr_valid_o <= instr_valid_i; // valid instruction
     end
   end
-
+ 
+ always @(posedge clk ) begin
+    if(hold_valid_i)begin
+      instr_o <= instr_o; // instruction
+      pc_d_o <= pc_d_o;
+    end
+    else begin
+      instr_o <= instr_i; // instruction
+      pc_d_o <= pc_o;
+    end
+  end
 
 endmodule

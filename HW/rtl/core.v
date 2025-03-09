@@ -7,8 +7,13 @@ module core (
   wire jump_valid;
   wire jump_hold_o;
   wire ls_hold_o;
-  wire [31:0] pc_o;
+  wire [31:0] pc_if_o; 
+  wire [31:0] pc_id_o;
+  wire [31:0] pc_d_o;
+
   wire [31:0] instr_rom;
+  wire [31:0] instr_o;
+
   wire instr_valid_i;
   wire instr_valid_o;
  
@@ -41,7 +46,7 @@ module core (
   wire mem_ack_i;           // memory ack
 
   rom u_rom (
-    .addr(pc_o),
+    .addr(pc_if_o),
     .instr(instr_rom)
   );
 
@@ -50,17 +55,21 @@ module core (
     .rst_n(rst_n),
     .instr_valid_i('b1),
     .instr_i(instr_rom),
+    .instr_o(instr_o),
     .pc_next_i(pc_next_o),
     .jump_valid_i(jump_valid),
     .hold_valid_i(ls_hold_o),
-    .pc_o(pc_o),
+    .pc_o(pc_if_o),
+    .pc_d_o(pc_d_o),
     .instr_valid_o(instr_valid_o)
   );
 
   idu u_idu (
     .clk(clk),
     .rst_n(rst_n),
-    .instr_i(instr_rom),
+    .instr_i(instr_o),
+    .pc_i(pc_d_o),
+    .pc_o(pc_id_o),
 
     .jump_hold_i(jump_hold_o),
     .ls_hold_i(ls_hold_o),
@@ -84,7 +93,7 @@ module core (
     .clk(clk),
     .rst_n(rst_n),
 
-    .pc_i(pc_o),
+    .pc_i(pc_id_o),
     .pc_next_o(pc_next_o),
     .jump_flag_o(jump_valid),
     .jump_hold_o(jump_hold_o),

@@ -16,7 +16,7 @@ module sram #(
 );
 
   // Declare the SRAM memory array
-  reg [DATA_WIDTH-1:0] mem [(2**ADDR_WIDTH)-1:0];
+  reg [DATA_WIDTH-1:0] mem [1024-1:0];
 
   integer i;
   always @(posedge clk or negedge rst_n) begin
@@ -35,7 +35,12 @@ module sram #(
     dout <= mem[addr]; // Read operation
   end
 
+  reg sel_d;
   always @(posedge clk ) begin
-    ack <= sel;
+    sel_d <= sel;
+  end
+  
+  always @(posedge clk ) begin
+    ack <= sel & (!sel_d);
   end
 endmodule
