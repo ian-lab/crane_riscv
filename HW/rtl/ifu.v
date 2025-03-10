@@ -13,25 +13,22 @@ module ifu (
     input  clk,
     input  rst_n,
 
-    input         instr_valid_i, // from sram
-    input  [31:0] instr_i, // from sram
+    input         instr_valid_i, // from instr_rom
+    input  [31:0] instr_i,       // from instr_rom
 
-    input  [31:0] pc_next_i, // from exu
-    input         jump_valid_i, // from exu
-    input         hold_valid_i, // from exu
+    input  [31:0] pc_next_i,    // from exu, jump pc
+    input         jump_valid_i, // from exu, jump 
+    input         hold_valid_i, // from exu, hold
 
     output reg [31:0] pc_o, // pc, to sram
     output reg [31:0] pc_d_o,
-    output reg [31:0] instr_o,
-    output reg instr_valid_o // to exu
+    output reg [31:0] instr_o
 );
 /*
  *                     ____
  * instr_valid_i: ____|    |____
  *                     ____
  * instr_i:       ____|    |____     
- *                         ____
- * instr_valid_o:     ____|    |____
  *                         ____
  * instr_o:           ____|    |____     
  */
@@ -50,17 +47,9 @@ module ifu (
       pc_o <= pc_o + 'd4; // 32bit bus
     end
   end
-
-  always @(posedge clk or negedge rst_n) begin
-    if (~rst_n) begin
-      instr_valid_o <= 1'b0;
-    end 
-    else if (instr_valid_i) begin
-      instr_valid_o <= instr_valid_i; // valid instruction
-    end
-  end
  
- always @(posedge clk ) begin
+  // PIPELINE
+  always @(posedge clk ) begin
     if(hold_valid_i)begin
       instr_o <= instr_o; // instruction
       pc_d_o <= pc_d_o;

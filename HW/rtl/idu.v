@@ -16,7 +16,7 @@ module idu (
     output reg [31:0] pc_o,
     
     input  jump_hold_i, // from exu
-    input  ls_hold_i, // from exu
+    input  ls_hold_i,   // from exu
 
     input  [31:0] reg1_rdata_i, // register read data, from regfile
     input  [31:0] reg2_rdata_i, // register read data, from regfile
@@ -35,15 +35,14 @@ module idu (
 );
 
   wire [31:0] instr_tmp = jump_hold_i ? `NOP : instr_i; // jump or hold will generate nop instruction
-  //wire [31:0] instr_tmp = instr_i;
-  assign rs1_o = instr_tmp[19:15]; // source register 1
-  assign rs2_o = instr_tmp[24:20]; // source register 2
 
-  //
+  assign rs1_o = instr_tmp[19:15]; // source register addr 1
+  assign rs2_o = instr_tmp[24:20]; // source register addr 2
+
   wire [6:0] opcode = instr_tmp[6:0];   // opreation code
   wire [2:0] funct3 = instr_tmp[14:12]; // operation code
   wire [6:0] funct7 = instr_tmp[31:25]; // operation code
-  wire [4:0] rd  = instr_tmp[11:7]; // destination register
+  wire [4:0] rd     = instr_tmp[11:7];  // destination register
 
   wire [31:0] imme_i = { {20{instr_tmp[31]}}, instr_tmp[31:20]};  // i type immediate data
   wire [31:0] imme_s = { {20{instr_tmp[31]}}, instr_tmp[31:25],  instr_tmp[11:7]}; // s type immediate data
@@ -62,37 +61,36 @@ module idu (
   reg [31:0] instr_tmp_d; // for debug
   always @(posedge clk ) begin
     if(ls_hold_i)begin
-          // instruction decode
-    imme_o <= imme_o;
-    rd_o <= rd_o;
-    funct3_o <= funct3_o;
-    funct7_o <= funct7_o;
-    opcode_o <= opcode_o;
+      imme_o <= imme_o;
+      rd_o <= rd_o;
+      funct3_o <= funct3_o;
+      funct7_o <= funct7_o;
+      opcode_o <= opcode_o;
     
-    // register read data
-    reg1_rdata_o <= reg1_rdata_o;
-    reg2_rdata_o <= reg2_rdata_o;
+      // register read data
+      reg1_rdata_o <= reg1_rdata_o;
+      reg2_rdata_o <= reg2_rdata_o;
 
-    pc_o <= pc_o;
+      pc_o <= pc_o;
 
-    instr_tmp_d <= instr_tmp_d;
+      instr_tmp_d <= instr_tmp_d;
 
     end
     else begin
-    // instruction decode
-    imme_o <= imme_tmp;
-    rd_o <= rd;
-    funct3_o <= funct3;
-    funct7_o <= funct7;
-    opcode_o <= opcode;
+      // instruction decode
+      imme_o <= imme_tmp;
+      rd_o <= rd;
+      funct3_o <= funct3;
+      funct7_o <= funct7;
+      opcode_o <= opcode;
     
-    // register read data
-    reg1_rdata_o <= reg1_rdata_i;
-    reg2_rdata_o <= reg2_rdata_i;
+      // register read data
+      reg1_rdata_o <= reg1_rdata_i;
+      reg2_rdata_o <= reg2_rdata_i;
 
-    pc_o <= pc_i;
+      pc_o <= pc_i;
 
-    instr_tmp_d <= instr_tmp;
+      instr_tmp_d <= instr_tmp;
     end
   end
 

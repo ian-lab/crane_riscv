@@ -15,7 +15,6 @@ module core (
   wire [31:0] instr_o;
 
   wire instr_valid_i;
-  wire instr_valid_o;
  
   wire [11:0] imme_o;
   wire [ 4:0] rd_addr_o;
@@ -60,8 +59,7 @@ module core (
     .jump_valid_i(jump_valid),
     .hold_valid_i(ls_hold_o),
     .pc_o(pc_if_o),
-    .pc_d_o(pc_d_o),
-    .instr_valid_o(instr_valid_o)
+    .pc_d_o(pc_d_o)
   );
 
   idu u_idu (

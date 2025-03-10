@@ -74,7 +74,7 @@ end
 
 reg mem_ack_d;
 always @(posedge clk) begin
- mem_ack_d <= mem_ack_i;
+  mem_ack_d <= mem_ack_i;
 end
 
 // load/store hold flag
@@ -84,7 +84,7 @@ always @(*)begin
 end
 
 always @(posedge clk)begin
-  mem_sel_o = ls_hold_o;
+  mem_sel_o <= ls_hold_o;
 end
 
 reg instr_error;
@@ -107,7 +107,6 @@ always @(*) begin
   pc_next_o = 0;
   jump_flag_o = 0;
   ls_flag = 0;
-  // mem_sel_o = 0;
   instr_error = 0;
 
   case (opcode_i)
@@ -238,6 +237,71 @@ always @(*) begin
             end
           endcase
         end
+        7'b000_0001: begin // M instr funct7[5:1] == 0
+          case (funct3_i)
+            `MUL: begin
+              multiplier_1 = reg1_rdata_i;
+              multiplier_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = multiplier_o[31:0];
+            end
+            `MULH: begin
+              multiplier_1 = reg1_rdata_i;
+              multiplier_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = multiplier_o[63:32];
+            end
+            `MULHSU: begin
+              multiplier_1 = reg1_rdata_i;
+              multiplier_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = multiplier_o[63:32];
+            end
+            `MULHU: begin
+              multiplier_1 = reg1_rdata_i;
+              multiplier_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = multiplier_o[63:32];
+            end
+            `DIV: begin
+              divider_1 = reg1_rdata_i;
+              divider_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = divider_o;
+            end
+            `DIVU: begin
+              divider_1 = reg1_rdata_i;
+              divider_2 = reg2_rdata_i;
+
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = divider_o;
+            end
+            `REM: begin
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = reg1_rdata_i % reg2_rdata_i;
+            end
+            `REMU: begin
+              reg_wen_o = 1'b1;
+              reg_waddr_o = rd_i;
+              reg_wdata_o = reg1_rdata_i % reg2_rdata_i;
+            end
+            default: begin
+              instr_error = 1;
+            end
+          endcase
+        end
         default: begin
           instr_error = 1;
         end 
@@ -247,7 +311,6 @@ always @(*) begin
     //  L-type instructions
     `TYPE_L: begin // load memory to register
       ls_flag = 1'b1;
-      // mem_sel_o = 1'b1;
 
       adder_1 = reg1_rdata_i;
       adder_2 = { {20{imme_i[11]}}, imme_i}; // signed
@@ -298,7 +361,6 @@ always @(*) begin
     // S-type instructions
     `TYPE_S: begin // store register to memory
       ls_flag = 1'b1;
-      // mem_sel_o = 1'b1;
 
       adder_1 = reg1_rdata_i;
       adder_2 = { {20{imme_i[11]}}, imme_i}; // signed

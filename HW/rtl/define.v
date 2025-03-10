@@ -35,8 +35,17 @@
 `define SUB  3'b000
 
 `define SLLI 3'b001
-`define SRLI  3'b101
-`define SRAI  3'b101
+`define SRLI 3'b101
+`define SRAI 3'b101
+// M-type
+`define MUL  3'b000
+`define MULH 3'b001
+`define MULHSU 3'b010
+`define MULHU 3'b011
+`define DIV  3'b100
+`define DIVU 3'b101
+`define REM  3'b110
+`define REMU 3'b111
 
 // L-type
 `define LB   3'b000
