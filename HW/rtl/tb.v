@@ -36,7 +36,7 @@ module tb();
   end
 
   initial begin
-    #500; 
+    #800; 
     $finish;
   end
 
